@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Three.js TypeScript Tutorials by Sean Bradley</title>
+        <style>
+            body {
+                overflow: hidden;
+                margin: 0px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <canvas id="loader-canvas" style="position: absolute"></canvas>
+        <div
+            style="
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 1000px;
+                height: 100px;
+                overflow: auto;
+            "
+        >
+            <canvas id="sprite-canvas" width="10" height="10"></canvas>
+        </div>
+        <p id="info" style="position: absolute; right: 20px; top: 20px">Loading</p>
+        <script type="module" src="bundle.js"></script>
+    </body>
+</html>
