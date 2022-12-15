@@ -4,11 +4,11 @@ An experimental particle-based voxel renderer, designed to explore optimization 
 
 ## Observations
 
-1. Reading individual pixels from a Canvas Context via `var pixel = ctx.getImageData(x, y, 1, 1).data` is quite slow, even when using a sprite sheet.
+1. Reading individual pixels from a Canvas Context via `var pixel = ctx.getImageData(x, y, 1, 1).data` is quite slow, even when using a sprite sheet. `willReadFrequently` seems to have little to no effect.
 1. `Array.push()` does not seem slower then `Float32Array.set()` for writing data.
-1. Bypassing Canvas completely by loading a PNG as a raw file using `XMLHttpRequest`, then piping the arrayBuffer into a `Uint8Array` and decoding via [UPNG](https://github.com/photopea/UPNG.js) seems like the fastest way to read pixel data, and supports indexed color PNG8s as well. 8bit PNGs are more than suffucent for PolyJet voxel printing since PolyJet printers support a maximum of 7-8 colors/resins-types per print.
+1. Bypassing Canvas completely by loading a PNG as a raw file using `XMLHttpRequest`, then piping the arrayBuffer into a `Uint8Array` and decoding via [UPNG](https://github.com/photopea/UPNG.js) seems like the fastest way to read pixel data, and supports indexed color PNG8s as well. 8bit PNGs are more than sufficent for PolyJet voxel printing since PolyJet printers support a maximum of 7-8 colors/resins-types per print.
 
-## TOTO
+## TODO
 
 -   [ ] Simulate color blending
 -   [ ] Output sprites directly as animated PNG
