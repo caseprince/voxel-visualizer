@@ -15,7 +15,7 @@ const scene = new THREE.Scene()
 scene.background = new THREE.Color(0x0b0b0b);
 
 const camera = new THREE.PerspectiveCamera(27, window.innerWidth / window.innerHeight, 5, 6500);
-camera.position.set(0, 600, 3000)
+camera.position.set(0, 700, 3000)
 
 const renderer = new THREE.WebGLRenderer()
 renderer.setSize(window.innerWidth, window.innerHeight)
@@ -50,8 +50,17 @@ var positions32 = new Float32Array(20000000);
 var colors32 = new Float32Array(20000000);
 let pointsMaterial: THREE.PointsMaterial;
 let points: THREE.Points;
+var alphas: any[] = [];
 
 const populateParticles = () => {
+
+    // var alphas = new Float32Array(particles * 1); // 1 values per vertex
+    // for (var i = 0; i < particles; i++) {
+    //     alphas[i] = 0.05;
+    // }
+
+    bufferGeometry.setAttribute('alpha', new THREE.Float32BufferAttribute(alphas, 1));
+
     if (particleOptions.useTypedArrays) {
         console.log("Using useTypedArrays with length " + positions32.length);
         bufferGeometry.setAttribute("position", new THREE.Float32BufferAttribute(positions32, 3));
@@ -65,6 +74,50 @@ const populateParticles = () => {
         size: 4.2 * particleOptions.chunkSize,
         vertexColors: true,
     });
+
+
+    // uniforms
+    const uniforms = {
+        // color: { value: new THREE.Color(0xffffff) },
+    };
+
+
+    // gl_PointSize = size * ( 300.0 / -mvPosition.z );
+    const vertexShader = `
+        attribute float alpha;
+        varying float vAlpha;
+        varying vec3 vColor;
+        void main() {
+            vColor = color;
+                vAlpha = alpha;
+            vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+            gl_PointSize = 4.0;
+            gl_Position = projectionMatrix * mvPosition;
+        }
+
+    `
+    const fragmentShader = `
+        varying vec3 vColor;
+        varying float vAlpha;
+        void main() {
+            gl_FragColor = vec4( vColor, vAlpha );
+        }
+    `
+
+    // point cloud material
+    var shaderMaterial = new THREE.ShaderMaterial({
+        uniforms: uniforms,
+        vertexShader,
+        fragmentShader,
+        transparent: true,
+        depthWrite: false,
+        vertexColors: true
+    });
+    //shaderMaterial.defaultAttributeValues = { color: new THREE.Float32BufferAttribute(colors, 3) }
+
+    // point cloud
+    // points = new THREE.Points(bufferGeometry, shaderMaterial);
+
 
     points = new THREE.Points(bufferGeometry, pointsMaterial);
     scene.add(points);
@@ -99,7 +152,7 @@ var particleOptions = {
     useTypedArrays: false,
     bypassCanvas: true
 };
-gui.add(particleOptions, 'chunkSize', 1, 10, 1) // chunkSize of 1 causes crash w/o useful error, unless useTypedArrays. Buffer overflow?
+gui.add(particleOptions, 'chunkSize', 2, 10, 1) // chunkSize of 1 causes crash w/o useful error, unless useTypedArrays. Buffer overflow?
     .onFinishChange(() => reRender());
 
 const guiParticleLayers = gui.add(particleOptions, 'particleLayers', 5, 500, 1)
@@ -196,7 +249,9 @@ const pushParticle = (x: number, y: number, layer: number, { r, g, b, a }: { r: 
     } else {
         positions.push(xPoz, zPoz, yPoz);
         colors.push(r * distanceRatio / 255, g * distanceRatio / 255, b * distanceRatio / 255);
+
     }
+    alphas.push(r === 45 ? 0.03 : 1)
     // }
     particles++;
 
