@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import * as Stats from 'stats.js'
 import * as dat from 'dat.gui';
 import * as UPNG from 'upng-js';
+import { ShaderMaterial } from 'three';
 
 const progressBar = document.getElementById('progressBar') as HTMLElement
 
@@ -42,6 +43,7 @@ const imgHeight = 827;
 const imgWidth = src2 ? 827 : 1664;
 const imgAspectRatio = src2 ? 1 : 2;
 const sourceLayers = 2409;
+const VERO_CLEAR_ALPHA = 0.05;
 
 var bufferGeometry = new THREE.BufferGeometry();
 var positions: any[] = [];
@@ -54,14 +56,8 @@ var alphas: any[] = [];
 
 const populateParticles = () => {
 
-    // var alphas = new Float32Array(particles * 1); // 1 values per vertex
-    // for (var i = 0; i < particles; i++) {
-    //     alphas[i] = 0.05;
-    // }
-
     bufferGeometry.setAttribute('alpha', new THREE.Float32BufferAttribute(alphas, 1));
-
-    if (particleOptions.useTypedArrays) {
+    if (state.useTypedArrays) {
         console.log("Using useTypedArrays with length " + positions32.length);
         bufferGeometry.setAttribute("position", new THREE.Float32BufferAttribute(positions32, 3));
         bufferGeometry.setAttribute("color", new THREE.Float32BufferAttribute(colors32, 3));
@@ -70,56 +66,55 @@ const populateParticles = () => {
         bufferGeometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
     }
 
-    pointsMaterial = new THREE.PointsMaterial({
-        size: 4.2 * particleOptions.chunkSize,
-        vertexColors: true,
-    });
+    if (state.transparency) {
 
+        const uniforms = {
+            // color: { value: new THREE.Color(0xffffff) },
+            size: { value: 10 }
+        };
 
-    // uniforms
-    const uniforms = {
-        // color: { value: new THREE.Color(0xffffff) },
-    };
-
-
-    // gl_PointSize = size * ( 300.0 / -mvPosition.z );
-    const vertexShader = `
-        attribute float alpha;
-        varying float vAlpha;
-        varying vec3 vColor;
-        void main() {
-            vColor = color;
+        // gl_PointSize = size * ( 300.0 / -mvPosition.z );
+        //
+        const vertexShader = `
+            attribute float alpha;
+            varying float vAlpha;
+            varying vec3 vColor;
+            void main() {
+                vColor = color;
                 vAlpha = alpha;
-            vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-            gl_PointSize = 4.0;
-            gl_Position = projectionMatrix * mvPosition;
-        }
+                vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+                gl_PointSize = 5.0;
+                gl_Position = projectionMatrix * mvPosition;
+            }
 
-    `
-    const fragmentShader = `
-        varying vec3 vColor;
-        varying float vAlpha;
-        void main() {
-            gl_FragColor = vec4( vColor, vAlpha );
-        }
-    `
+        `
+        const fragmentShader = `
+            varying vec3 vColor;
+            varying float vAlpha;
+            void main() {
+                gl_FragColor = vec4( vColor, vAlpha );
+            }
+        `
+        // point cloud material
+        var shaderMaterial = new THREE.ShaderMaterial({
+            uniforms: uniforms,
+            vertexShader,
+            fragmentShader,
+            transparent: true,
+            // depthWrite: false,
+            vertexColors: true
+        });
+        // shaderMaterial.defaultAttributeValues = { color: new THREE.Float32BufferAttribute(colors, 3) }
+        points = new THREE.Points(bufferGeometry, shaderMaterial);
 
-    // point cloud material
-    var shaderMaterial = new THREE.ShaderMaterial({
-        uniforms: uniforms,
-        vertexShader,
-        fragmentShader,
-        transparent: true,
-        depthWrite: false,
-        vertexColors: true
-    });
-    //shaderMaterial.defaultAttributeValues = { color: new THREE.Float32BufferAttribute(colors, 3) }
+    } else {
+        pointsMaterial = new THREE.PointsMaterial({
+            size: 4.2 * state.chunkSize,
+            vertexColors: true,
+        });
+        points = new THREE.Points(bufferGeometry, pointsMaterial);
+    }
 
-    // point cloud
-    // points = new THREE.Points(bufferGeometry, shaderMaterial);
-
-
-    points = new THREE.Points(bufferGeometry, pointsMaterial);
     scene.add(points);
 
     const now = new Date().getTime();
@@ -127,7 +122,7 @@ const populateParticles = () => {
 
     loaderCtx.clearRect(0, 0, imgWidth / imgAspectRatio, imgHeight);
     info.innerHTML = `<b>${numFormat.format(particles)}</b> particles rendered in <b>${Math.round(renderTime / 1000)} sec</b><br>
-    <b>${Math.round(renderTime / particleOptions.particleLayers)}ms</b> per layer`
+    <b>${Math.round(renderTime / state.particleLayers)}ms</b> per layer`
     progressBar.setAttribute('style', 'display: none');
 };
 
@@ -144,47 +139,59 @@ const toggleDisabled = (element: HTMLElement, disabled: boolean) => {
 }
 
 var gui = new dat.GUI({ name: 'My GUI' });
-var particleOptions = {
-    chunkSize: 2, // Currently s/b particleSampleSpread
+var state = {
+    chunkSize: 4, // Currently s/b particleSampleSpread
     particleLayers: 200, // 390 ~= max w/ single sprite img
     particleScale: 5,
     useSpritesImg: true,
     useTypedArrays: false,
-    bypassCanvas: true
+    bypassCanvas: true,
+    transparency: false,
 };
-gui.add(particleOptions, 'chunkSize', 2, 10, 1) // chunkSize of 1 causes crash w/o useful error, unless useTypedArrays. Buffer overflow?
+gui.add(state, 'chunkSize', 2, 10, 1) // chunkSize of 1 causes crash w/o useful error, unless useTypedArrays. Buffer overflow?
     .onFinishChange(() => reRender());
 
-const guiParticleLayers = gui.add(particleOptions, 'particleLayers', 5, 500, 1)
+const guiParticleLayers = gui.add(state, 'particleLayers', 5, 500, 1)
     .onFinishChange(() => reRender())
-if (particleOptions.useSpritesImg) {
+if (state.useSpritesImg) {
     toggleDisabled(guiParticleLayers.domElement, true)
 }
 
-gui.add(particleOptions, 'particleScale', 2, 10)
-    .onChange(value => pointsMaterial.size = value * particleOptions.chunkSize);
+gui.add(state, 'particleScale', 2, 10)
+    .onChange(value => pointsMaterial.size = value * state.chunkSize);
 
-gui.add(particleOptions, 'useSpritesImg')
+gui.add(state, 'useSpritesImg')
     .onFinishChange(value => {
         toggleDisabled(guiParticleLayers.domElement, value);
         reRender();
     });
 
-gui.add(particleOptions, 'useTypedArrays')
+gui.add(state, 'useTypedArrays')
     .onChange(value => reRender());
 
 // Drawing to a canvas and pulling pixels from its context yields 32bit colors.
 // This seems much slower than loading a 8bit file buffer directly and and decoding with UPNG,
 // even if the whole contest is first converted to a Uint32Array
-gui.add(particleOptions, 'bypassCanvas')
+gui.add(state, 'bypassCanvas')
+    .onChange(value => reRender());
+
+gui.add(state, 'transparency')
     .onChange(value => reRender());
 
 
 
 
 const reRender = () => {
+    alphas = [];
+    colors = [];
+    positions = [];
+
     scene.remove(points);
-    pointsMaterial.dispose();
+    if (pointsMaterial) {
+        pointsMaterial.dispose();
+    }
+    // if (ShaderMaterial)
+
     bufferGeometry.dispose();
 
     particles = 0;
@@ -221,7 +228,7 @@ if (generateSprites) {
     // TODO: Use UPNG to generate animated PNG instead?
     const spriteCanvas = document.getElementById('sprite-canvas') as HTMLCanvasElement;
     spriteCanvas.width = imgWidth * spriteCols;
-    spriteCanvas.height = particleOptions.particleLayers / spriteCols * imgHeight;
+    spriteCanvas.height = state.particleLayers / spriteCols * imgHeight;
     console.log("spriteCanvas dimensions: " + spriteCanvas.width + " * " + spriteCanvas.height + " = " + spriteCanvas.width * spriteCanvas.height)
     spriteCanvas.style.width = `${spriteCanvas.width}px`;
     spriteCanvas.style.height = `${spriteCanvas.height}px`;
@@ -239,20 +246,21 @@ const pushParticle = (x: number, y: number, layer: number, { r, g, b, a }: { r: 
 
     const xPoz = x / canvas.width * volume - volume / 2;
     const yPoz = y / canvas.height * volume - volume / 2;
-    const zPoz = layer / particleOptions.particleLayers * volume - volume / 2;
+    const zPoz = layer / state.particleLayers * volume - volume / 2;
     const dist = dist3d(xPoz, zPoz, yPoz);
     //if (dist < (volume / 2) - 72) { // spherical hack just for this model... TODO: Hide model 1px adjacent to support?
     const distanceRatio = dist / (volume / 2.5); // Add some fake volumetric shading to differentiate foreground particles
-    if (particleOptions.useTypedArrays) {
+    if (state.useTypedArrays) {
         positions32.set([xPoz, zPoz, yPoz], particles * 3);
         colors32.set([r * distanceRatio / 255, g * distanceRatio / 255, b * distanceRatio / 255], particles * 3);
     } else {
         positions.push(xPoz, zPoz, yPoz);
         colors.push(r * distanceRatio / 255, g * distanceRatio / 255, b * distanceRatio / 255);
-
     }
-    alphas.push(r === 45 ? 0.03 : 1)
-    // }
+    if (state.transparency) {
+        alphas.push(r === 45 ? VERO_CLEAR_ALPHA : 1)
+    }
+
     particles++;
 
 }
@@ -278,8 +286,12 @@ const conditionallyPushRawParticle = (x: number, y: number, layer: number, { r, 
             b !== 0 &&   // hide air
             r !== 45) {  // hide non-alphaed VeroClear
             renderParticle = true;
+        } else if (r === 45 && state.transparency) {
+            renderParticle = true;
         }
+
     }
+    //console.log(r, state.transparency)
 
     if (renderParticle) {
         pushParticle(x, y, layer, { r, g, b, a })
@@ -303,8 +315,8 @@ const loadNextImage = () => {
         var myGetImageData = ctx.getImageData(0, 0, pic.width, pic.height);
         var sourceBuffer32 = new Uint32Array(myGetImageData.data.buffer);
 
-        for (var x = 0; x < canvas.width; x += imgAspectRatio * particleOptions.chunkSize) {
-            for (var y = 0; y < canvas.height; y += particleOptions.chunkSize) {
+        for (var x = 0; x < canvas.width; x += imgAspectRatio * state.chunkSize) {
+            for (var y = 0; y < canvas.height; y += state.chunkSize) {
 
                 // reading individual pixels like this is slooooow
                 // var pixel = ctx.getImageData(x, y, 1, 1).data;
@@ -318,8 +330,8 @@ const loadNextImage = () => {
             }
         }
         particleLayer++;
-        barStatus.style.width = particleLayer / particleOptions.particleLayers * 100 + '%';
-        srcLayer += Math.round(sourceLayers / particleOptions.particleLayers);
+        barStatus.style.width = particleLayer / state.particleLayers * 100 + '%';
+        srcLayer += Math.round(sourceLayers / state.particleLayers);
         if (srcLayer < sourceLayers) {
             loadNextImage();
         } else {
@@ -342,7 +354,7 @@ const loadSpritesFromPic = () => {
     console.log("sprites loaded ")
     var spritesCanvas = document.createElement("canvas");
     spritesCanvas.width = imgWidth * spriteCols;
-    spritesCanvas.height = particleOptions.particleLayers / spriteCols * imgHeight;
+    spritesCanvas.height = state.particleLayers / spriteCols * imgHeight;
     spritesCtx = spritesCanvas.getContext("2d", { willReadFrequently: true }) as CanvasRenderingContext2D;
     spritesCtx.drawImage(picSprites, 0, 0, picSprites.width, picSprites.height);
     myGetImageData = spritesCtx.getImageData(0, 0, picSprites.width, picSprites.height);
@@ -393,20 +405,20 @@ const parseNextSprite = () => {
     const spriteYIndex = Math.floor(currentSprite / spriteCols);
 
     // Single col/row would be easier... but larger than maximum canvas height/width!
-    for (var y = 0; y < imgHeight; y += particleOptions.chunkSize) {
+    for (var y = 0; y < imgHeight; y += state.chunkSize) {
         const spriteRowOffset = (spriteYIndex * imgHeight + y) * UPNGImage.width;
-        for (var x = 0; x < (imgWidth / imgAspectRatio); x += imgAspectRatio * particleOptions.chunkSize) {
+        for (var x = 0; x < (imgWidth / imgAspectRatio); x += imgAspectRatio * state.chunkSize) {
             const spriteXOffset = spriteXIndex * (imgWidth / imgAspectRatio) + x;
 
-            if (particleOptions.bypassCanvas) {
+            if (state.bypassCanvas) {
                 const colorIndex = UPNGData[spriteRowOffset + spriteXOffset];
                 const color = UPNGPalette[colorIndex];
                 if (color
-                    && colorIndex !== 0 // air
-                    && color.r !== 45 // clear
-                    && color.r !== 100 // support
+                    // && colorIndex !== 0 // air
+                    // && color.r !== 45 // clear
+                    // && color.r !== 100 // support
                 ) {
-                    pushParticle(x, y, currentSprite, UPNGPalette[colorIndex]);
+                    conditionallyPushRawParticle(x, y, currentSprite, UPNGPalette[colorIndex]);
                 }
             } else {
                 var val32 = sourceBuffer32[spriteRowOffset + spriteXOffset];
@@ -429,10 +441,10 @@ const parseNextSprite = () => {
  * INIT
  */
 const init = () => {
-    if (!particleOptions.useSpritesImg) {
+    if (!state.useSpritesImg) {
         loadNextImage();
     } else {
-        if (particleOptions.bypassCanvas) {
+        if (state.bypassCanvas) {
             loadSpritesFromFile()
         } else {
             console.log("loading pic" + spritesSrc)
