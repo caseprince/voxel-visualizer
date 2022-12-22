@@ -35,6 +35,20 @@
             #info b {
                 color: white;
             }
+            #sub-gui {
+                position: absolute;
+                top: 230px;
+                right: 15px;
+                width: 245px;
+            }
+            label {
+                color: #c9c9c9;
+                font-size: 13px;
+                margin-left: 10px;
+            }
+            .hidden {
+                display: none;
+            }
         </style>
     </head>
 
@@ -55,6 +69,10 @@
         <p id="info"></p>
         <div id="progressBar">
             <div id="barStatus"></div>
+        </div>
+        <div id="sub-gui" class="hidden">
+            <button id="save-apng" disabled>Save APNG</button>
+            <label id="save-apng-label">loading layers</label>
         </div>
         <script type="module" src="bundle.js"></script>
     </body>

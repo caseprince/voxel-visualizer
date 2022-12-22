@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import * as Stats from 'stats.js'
 import * as dat from 'dat.gui';
 import * as UPNG from 'upng-js';
-import { ShaderMaterial } from 'three';
+import { saveAs } from 'file-saver';
 
 const progressBar = document.getElementById('progressBar') as HTMLElement
 
@@ -38,6 +38,7 @@ let spritesSrc: string | null = null;
 // spritesSrc = '6cm_italianPaper_pavone_sprites.png';
 // spritesSrc = '6cm_italianPaper_pavone_sprites390.png';
 spritesSrc = '6cm_italianPaper_pavone_sprites200_8bit.png';
+// spritesSrc = '6cm_italianPaper_pavone_400layers.png';
 const volume = 1000; // TODO: 3D bounding box derived from .gcvf XML
 const imgHeight = 827;
 const imgWidth = src2 ? 827 : 1664;
@@ -104,7 +105,6 @@ const populateParticles = () => {
             // depthWrite: false,
             vertexColors: true
         });
-        // shaderMaterial.defaultAttributeValues = { color: new THREE.Float32BufferAttribute(colors, 3) }
         points = new THREE.Points(bufferGeometry, shaderMaterial);
 
     } else {
@@ -163,6 +163,7 @@ gui.add(state, 'particleScale', 2, 10)
 gui.add(state, 'useSpritesImg')
     .onFinishChange(value => {
         toggleDisabled(guiParticleLayers.domElement, value);
+        value ? subGUI.classList.add("hidden") : subGUI.classList.remove("hidden");
         reRender();
     });
 
@@ -291,7 +292,6 @@ const conditionallyPushRawParticle = (x: number, y: number, layer: number, { r, 
         }
 
     }
-    //console.log(r, state.transparency)
 
     if (renderParticle) {
         pushParticle(x, y, layer, { r, g, b, a })
@@ -302,6 +302,7 @@ const conditionallyPushRawParticle = (x: number, y: number, layer: number, { r, 
 const pic = new Image();
 let srcLayer = 0;
 let particleLayer = 0;
+let frames: ArrayBufferLike[] = [];
 const loadNextImage = () => {
     pic.src = src2 ? `imgs2/6cm_italianPaper_pavone_${srcLayer}.png` : `imgs/6cm_italianPaper_pavone_${srcLayer}.png`;
     pic.onload = function () {
@@ -312,8 +313,12 @@ const loadNextImage = () => {
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(pic, 0, 0);
-        var myGetImageData = ctx.getImageData(0, 0, pic.width, pic.height);
+        var myGetImageData = loaderCtx.getImageData(0, 0, pic.width, pic.height);
         var sourceBuffer32 = new Uint32Array(myGetImageData.data.buffer);
+
+        if (!state.useSpritesImg) {
+            frames.push(myGetImageData.data);
+        }
 
         for (var x = 0; x < canvas.width; x += imgAspectRatio * state.chunkSize) {
             for (var y = 0; y < canvas.height; y += state.chunkSize) {
@@ -335,11 +340,33 @@ const loadNextImage = () => {
         if (srcLayer < sourceLayers) {
             loadNextImage();
         } else {
+            saveAPNGButton.removeAttribute("disabled");
+            saveAPNGBlabel.innerHTML = "sprites loaded";
             populateParticles();
         }
     }
 }
 
+/*
+ * Download Sprites APNG
+ */
+const subGUI = document.getElementById("sub-gui") as HTMLElement;
+const saveAPNGButton = document.getElementById("save-apng") as HTMLElement;
+const saveAPNGBlabel = document.getElementById("save-apng-label") as HTMLElement;
+if (!state.useSpritesImg) {
+    subGUI.classList.remove("hidden");
+}
+saveAPNGButton.addEventListener("click", () => {
+    console.log(frames.length, canvas.width, canvas.height);
+    saveAPNGButton.setAttribute("disabled", "")
+    saveAPNGBlabel.innerHTML = "encoding...";
+    setTimeout(() => {
+        var png = UPNG.encode(frames, canvas.width, canvas.height, 8, frames.map(() => 30));
+        const blob = new Blob([new Uint8Array(png)]);
+        saveAs(blob, `6cm_italianPaper_pavone_${state.particleLayers}layers.png`);
+        saveAPNGBlabel.innerHTML = "saved!";
+    }, 1);
+})
 
 let myGetImageData: ImageData;
 let sourceBuffer32: Uint32Array;
