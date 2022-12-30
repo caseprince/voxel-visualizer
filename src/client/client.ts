@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import * as Stats from 'stats.js'
 import * as dat from 'dat.gui';
 import * as UPNG from 'upng-js';
+// const UPNG = require('./UPNG.js') as any;
 import { saveAs } from 'file-saver';
 
 const progressBar = document.getElementById('progressBar') as HTMLElement
@@ -24,7 +25,7 @@ document.body.appendChild(renderer.domElement)
 
 const controls = new OrbitControls(camera, renderer.domElement)
 
-controls.autoRotate = true;
+// controls.autoRotate = true;
 
 const numFormat = Intl.NumberFormat('en-US');
 const info = document.getElementById('info') as HTMLElement;
@@ -38,7 +39,9 @@ let spritesSrc: string | null = null;
 // spritesSrc = '6cm_italianPaper_pavone_sprites.png';
 // spritesSrc = '6cm_italianPaper_pavone_sprites390.png';
 spritesSrc = '6cm_italianPaper_pavone_sprites200_8bit.png';
-// spritesSrc = '6cm_italianPaper_pavone_400layers.png';
+// spritesSrc = '6cm_italianPaper_pavone_200layers.png';
+// spritesSrc = '6cm_italianPaper_pavone_sprites200.png';
+spritesSrc = '6cm_italianPaper_pavone_sprites380_8bit.png';
 const volume = 1000; // TODO: 3D bounding box derived from .gcvf XML
 const imgHeight = 827;
 const imgWidth = src2 ? 827 : 1664;
@@ -141,13 +144,22 @@ const toggleDisabled = (element: HTMLElement, disabled: boolean) => {
 var gui = new dat.GUI({ name: 'My GUI' });
 var state = {
     chunkSize: 4, // Currently s/b particleSampleSpread
-    particleLayers: 200, // 390 ~= max w/ single sprite img
+    particleLayers: 380, // 380 ~= max w/ single sprite img (UPNG fails to save larger, drawing to <canvas> also fails with ":u(")
     particleScale: 5,
     useSpritesImg: true,
     useTypedArrays: false,
     bypassCanvas: true,
     transparency: false,
 };
+var folder1 = gui.addFolder('Sprite Sheet');
+folder1.open();
+folder1.add(state, 'useSpritesImg')
+    .onFinishChange(value => {
+        toggleDisabled(guiParticleLayers.domElement, value);
+        value ? subGUI.classList.add("hidden") : subGUI.classList.remove("hidden");
+        reRender();
+    });
+
 gui.add(state, 'chunkSize', 2, 10, 1) // chunkSize of 1 causes crash w/o useful error, unless useTypedArrays. Buffer overflow?
     .onFinishChange(() => reRender());
 
@@ -160,18 +172,13 @@ if (state.useSpritesImg) {
 gui.add(state, 'particleScale', 2, 10)
     .onChange(value => pointsMaterial.size = value * state.chunkSize);
 
-gui.add(state, 'useSpritesImg')
-    .onFinishChange(value => {
-        toggleDisabled(guiParticleLayers.domElement, value);
-        value ? subGUI.classList.add("hidden") : subGUI.classList.remove("hidden");
-        reRender();
-    });
+
 
 gui.add(state, 'useTypedArrays')
     .onChange(value => reRender());
 
 // Drawing to a canvas and pulling pixels from its context yields 32bit colors.
-// This seems much slower than loading a 8bit file buffer directly and and decoding with UPNG,
+// This seems much slower than loading a 8bit file buffer directly and decoding with UPNG,
 // even if the whole contest is first converted to a Uint32Array
 gui.add(state, 'bypassCanvas')
     .onChange(value => reRender());
@@ -224,10 +231,10 @@ let spriteCtx: CanvasRenderingContext2D;
 let spritesCtx: CanvasRenderingContext2D;
 const MAX_CANVAS_AREA = 268435456;
 const spriteCols = 20; // TODO: Crop ait in photoshop
+const spriteCanvas = document.createElement("canvas"); // document.getElementById('sprite-canvas') as HTMLCanvasElement;
 if (generateSprites) {
     // Canvas for drawing all individually loaded layers as sprites in a single big image
     // TODO: Use UPNG to generate animated PNG instead?
-    const spriteCanvas = document.getElementById('sprite-canvas') as HTMLCanvasElement;
     spriteCanvas.width = imgWidth * spriteCols;
     spriteCanvas.height = state.particleLayers / spriteCols * imgHeight;
     console.log("spriteCanvas dimensions: " + spriteCanvas.width + " * " + spriteCanvas.height + " = " + spriteCanvas.width * spriteCanvas.height)
@@ -335,12 +342,16 @@ const loadNextImage = () => {
             }
         }
         particleLayer++;
-        barStatus.style.width = particleLayer / state.particleLayers * 100 + '%';
-        srcLayer += Math.round(sourceLayers / state.particleLayers);
+        setProgressBarRatio(particleLayer / state.particleLayers)
+        // srcLayer += Math.round(sourceLayers / state.particleLayers);
+        srcLayer = Math.round(particleLayer / state.particleLayers * sourceLayers)
         if (srcLayer < sourceLayers) {
             loadNextImage();
+            console.log(particleLayer)
         } else {
+            console.log(`sprite sheet drawn with ${particleLayer + 1} sprites`)
             saveAPNGButton.removeAttribute("disabled");
+            saveSpritesPNGButton.removeAttribute("disabled");
             saveAPNGBlabel.innerHTML = "sprites loaded";
             populateParticles();
         }
@@ -352,6 +363,7 @@ const loadNextImage = () => {
  */
 const subGUI = document.getElementById("sub-gui") as HTMLElement;
 const saveAPNGButton = document.getElementById("save-apng") as HTMLElement;
+const saveSpritesPNGButton = document.getElementById("save-sprites-png") as HTMLElement;
 const saveAPNGBlabel = document.getElementById("save-apng-label") as HTMLElement;
 if (!state.useSpritesImg) {
     subGUI.classList.remove("hidden");
@@ -359,13 +371,28 @@ if (!state.useSpritesImg) {
 saveAPNGButton.addEventListener("click", () => {
     console.log(frames.length, canvas.width, canvas.height);
     saveAPNGButton.setAttribute("disabled", "")
+    saveSpritesPNGButton.setAttribute("disabled", "")
     saveAPNGBlabel.innerHTML = "encoding...";
     setTimeout(() => {
-        var png = UPNG.encode(frames, canvas.width, canvas.height, 8, frames.map(() => 30));
+        var png = UPNG.encode(frames, canvas.width, canvas.height, 16, frames.map(() => 30));
         const blob = new Blob([new Uint8Array(png)]);
         saveAs(blob, `6cm_italianPaper_pavone_${state.particleLayers}layers.png`);
         saveAPNGBlabel.innerHTML = "saved!";
-    }, 1);
+    }, 10);
+})
+saveSpritesPNGButton.addEventListener("click", () => {
+    console.log(frames.length, canvas.width, canvas.height);
+    saveAPNGButton.setAttribute("disabled", "")
+    saveSpritesPNGButton.setAttribute("disabled", "")
+    saveAPNGBlabel.innerHTML = "encoding...";
+    setTimeout(() => {
+        var myGetImageData = spriteCtx.getImageData(0, 0, spriteCanvas.width, spriteCanvas.height);
+        var sourceBuffer32 = myGetImageData.data.buffer;
+        var png = UPNG.encode([sourceBuffer32], spriteCanvas.width, spriteCanvas.height, 16);
+        const blob = new Blob([new Uint8Array(png)]);
+        saveAs(blob, `6cm_italianPaper_pavone_sprites${state.particleLayers}.png`);
+        saveAPNGBlabel.innerHTML = "saved!";
+    }, 10);
 })
 
 let myGetImageData: ImageData;
@@ -387,6 +414,7 @@ const loadSpritesFromPic = () => {
     myGetImageData = spritesCtx.getImageData(0, 0, picSprites.width, picSprites.height);
     sourceBuffer32 = new Uint32Array(myGetImageData.data.buffer);
     numSprites = (picSprites.height / imgHeight) * spriteCols;
+    state.particleLayers = numSprites;
     parseNextSprites();
 }
 
@@ -414,16 +442,22 @@ const loadSpritesFromFile = () => {
                     UPNGPalette.push({ r: PLTE[i], g: PLTE[i + 1], b: PLTE[i + 2] })
                 }
                 numSprites = (UPNGImage.height / imgHeight) * spriteCols;
+                state.particleLayers = numSprites;
+                // numSprites = UPNGImage.frames.length;
                 parseNextSprites();
             }
         }
+    }
+    req.onprogress = function (event) {
+        setProgressBarRatio(event.loaded / event.total);
     }
     req.send(null);
 }
 
 var barStatus = document.getElementById("barStatus") as HTMLElement;
+const setProgressBarRatio = (ratio: number) => barStatus.style.width = ratio * 100 + '%';
 const parseNextSprites = () => {
-    currentSprite = 0;
+    currentSprite = 0; // 104;
     parseNextSprite();
 }
 const parseNextSprite = () => {
@@ -445,7 +479,7 @@ const parseNextSprite = () => {
                     // && color.r !== 45 // clear
                     // && color.r !== 100 // support
                 ) {
-                    conditionallyPushRawParticle(x, y, currentSprite, UPNGPalette[colorIndex]);
+                    conditionallyPushRawParticle(x, y, currentSprite, color);
                 }
             } else {
                 var val32 = sourceBuffer32[spriteRowOffset + spriteXOffset];
@@ -455,7 +489,33 @@ const parseNextSprite = () => {
             }
         }
     }
-    if (currentSprite < numSprites) {
+
+    // // TODO: Small debuggable APNG?
+    // const frame = UPNGImage.frames[currentSprite];
+    // const frameData = (frame as any)?.data as Uint8Array
+    // if (currentSprite === 120) {
+    //     console.log(frameData.buffer)
+    // }
+    // if (frameData && frame.rect) {
+    //     const area = frame.rect.width * frame.rect.height;
+    //     console.log('area: ' + area + ' data.length * 2: ' + frameData.length * 2 + ' diff: ' + (area - frameData.length * 2))
+    //     for (var y = 0; y < frame.rect.height; y += state.chunkSize) {
+    //         const spriteRowOffset = (y) * (frame.rect.width / 2);
+    //         for (var x = 0; x < frame.rect.width; x += state.chunkSize) {
+    //             const colorIndex = frameData[spriteRowOffset + (x / 2)];
+    //             const color = UPNGPalette[colorIndex];
+    //             if (color
+    //                 // && colorIndex !== 0 // air
+    //                 // && color.r !== 45 // clear
+    //                 // && color.r !== 100 // support
+    //             ) {
+    //                 conditionallyPushRawParticle(x + frame.rect.x, y + frame.rect.y, currentSprite, color);
+    //             }
+    //         }
+    //     }
+    // }
+
+    if (currentSprite < numSprites) { // 106
         // tail recursion to allow progress bar to update
         currentSprite++;
         setTimeout(parseNextSprite, 0);
