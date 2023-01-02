@@ -14,7 +14,7 @@ stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
 document.body.appendChild(stats.dom);
 
 const scene = new THREE.Scene()
-scene.background = new THREE.Color(0x0b0b0b);
+scene.background = new THREE.Color(0x222222);
 
 const camera = new THREE.PerspectiveCamera(27, window.innerWidth / window.innerHeight, 5, 6500);
 camera.position.set(0, 700, 3000)
@@ -35,9 +35,13 @@ const info = document.getElementById('info') as HTMLElement;
 const src2 = true;
 const generateSprites = false;
 let spritesSrc: string | null = null;
+// _8bit versions are saved with PhotoShop for 8bit 'depth' / color indexes.
+// UPNG and ImageMagick generate PNGs with `depth: 4`, which would require some bitwise stuff to parse.
+// PhotoShop also achieves the smallest filesize.
+// TODO: Try GIFs?
 const spritesSrc200 = '6cm_italianPaper_pavone_sprites200_8bit.png';
 const spritesSrc380 = '6cm_italianPaper_pavone_sprites380_8bit.png';
-// spritesSrc = '6cm_italianPaper_pavone_200layers.png';
+// spritesSrc = '6cm_italianPaper_pavone_200layers.png'; // Animated PNGs not easy to parse, and mysteriously seem a tad larger!
 spritesSrc = spritesSrc200;
 
 const volume = 1000; // TODO: 3D bounding box derived from .gcvf XML
@@ -401,7 +405,7 @@ saveAPNGButton.addEventListener("click", () => {
     saveSpritesPNGButton.setAttribute("disabled", "")
     saveAPNGBlabel.innerHTML = "encoding...";
     setTimeout(() => {
-        var png = UPNG.encode(frames, canvas.width, canvas.height, 16, frames.map(() => 30));
+        var png = UPNG.encode(frames, canvas.width, canvas.height, 8, frames.map(() => 30));
         const blob = new Blob([new Uint8Array(png)]);
         saveAs(blob, `6cm_italianPaper_pavone_${state.particleLayers}layers.png`);
         saveAPNGBlabel.innerHTML = "saved!";
@@ -415,7 +419,7 @@ saveSpritesPNGButton.addEventListener("click", () => {
     setTimeout(() => {
         var myGetImageData = spriteCtx.getImageData(0, 0, spriteCanvas.width, spriteCanvas.height);
         var sourceBuffer32 = myGetImageData.data.buffer;
-        var png = UPNG.encode([sourceBuffer32], spriteCanvas.width, spriteCanvas.height, 16);
+        var png = UPNG.encode([sourceBuffer32], spriteCanvas.width, spriteCanvas.height, 8);
         const blob = new Blob([new Uint8Array(png)]);
         saveAs(blob, `6cm_italianPaper_pavone_sprites${state.particleLayers}.png`);
         saveAPNGBlabel.innerHTML = "saved!";
