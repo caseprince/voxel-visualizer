@@ -24,8 +24,7 @@ renderer.setSize(window.innerWidth, window.innerHeight)
 document.body.appendChild(renderer.domElement)
 
 const controls = new OrbitControls(camera, renderer.domElement)
-
-// controls.autoRotate = true;
+controls.autoRotate = true;
 
 const numFormat = Intl.NumberFormat('en-US');
 const info = document.getElementById('info') as HTMLElement;
@@ -36,12 +35,11 @@ const info = document.getElementById('info') as HTMLElement;
 const src2 = true;
 const generateSprites = false;
 let spritesSrc: string | null = null;
-// spritesSrc = '6cm_italianPaper_pavone_sprites.png';
-// spritesSrc = '6cm_italianPaper_pavone_sprites390.png';
-spritesSrc = '6cm_italianPaper_pavone_sprites200_8bit.png';
+const spritesSrc200 = '6cm_italianPaper_pavone_sprites200_8bit.png';
+const spritesSrc380 = '6cm_italianPaper_pavone_sprites380_8bit.png';
 // spritesSrc = '6cm_italianPaper_pavone_200layers.png';
-// spritesSrc = '6cm_italianPaper_pavone_sprites200.png';
-spritesSrc = '6cm_italianPaper_pavone_sprites380_8bit.png';
+spritesSrc = spritesSrc200;
+
 const volume = 1000; // TODO: 3D bounding box derived from .gcvf XML
 const imgHeight = 827;
 const imgWidth = src2 ? 827 : 1664;
@@ -126,6 +124,9 @@ const populateParticles = () => {
     loaderCtx.clearRect(0, 0, imgWidth / imgAspectRatio, imgHeight);
     info.innerHTML = `<b>${numFormat.format(particles)}</b> particles rendered in <b>${Math.round(renderTime / 1000)} sec</b><br>
     <b>${Math.round(renderTime / state.particleLayers)}ms</b> per layer`
+    if (state['Generate Sprites']) {
+        saveSpritesUI.classList.remove("hidden");
+    }
     progressBar.setAttribute('style', 'display: none');
 };
 
@@ -135,55 +136,87 @@ const populateParticles = () => {
  */
 const toggleDisabled = (element: HTMLElement, disabled: boolean) => {
     if (disabled) {
-        element.setAttribute('style', "opacity: 0.5; filter: grayscale(100%) blur(1px); pointer-events: none");
+        element.classList.add('disabled');
     } else {
-        element.setAttribute('style', "");
+        element.classList.remove('disabled');
     }
 }
 
 var gui = new dat.GUI({ name: 'My GUI' });
 var state = {
+    "Generate Sprites": false,
+    "200 Layers": true,
+    "380 Layers": false,
+
     chunkSize: 4, // Currently s/b particleSampleSpread
-    particleLayers: 380, // 380 ~= max w/ single sprite img (UPNG fails to save larger, drawing to <canvas> also fails with ":u(")
     particleScale: 5,
-    useSpritesImg: true,
+    transparency: false,
+
+    particleLayers: 200, // 380 ~= max w/ single sprite img (UPNG fails to save larger, drawing to <canvas> also fails with ":u(")
     useTypedArrays: false,
     bypassCanvas: true,
-    transparency: false,
+
 };
-var folder1 = gui.addFolder('Sprite Sheet');
-folder1.open();
-folder1.add(state, 'useSpritesImg')
+
+var folderSprites = gui.addFolder('Sprite Sheet');
+folderSprites.open();
+const gui200Layers = folderSprites.add(state, '200 Layers')
     .onFinishChange(value => {
-        toggleDisabled(guiParticleLayers.domElement, value);
-        value ? subGUI.classList.add("hidden") : subGUI.classList.remove("hidden");
+        spritesSrc = spritesSrc200;
+        state.particleLayers = 200;
+        state["380 Layers"] = !value;
+        state.chunkSize = 4;
+        toggleDisabled(guiTransparency.domElement, false);
+        gui.updateDisplay();
+        reRender();
+    });
+const gui390Layers = folderSprites.add(state, '380 Layers')
+    .onFinishChange(value => {
+        spritesSrc = spritesSrc380;
+        state.particleLayers = 380;
+        state["200 Layers"] = !value;
+        state.chunkSize = 2;
+        state.transparency = false;
+        toggleDisabled(guiTransparency.domElement, true);
+        gui.updateDisplay();
         reRender();
     });
 
-gui.add(state, 'chunkSize', 2, 10, 1) // chunkSize of 1 causes crash w/o useful error, unless useTypedArrays. Buffer overflow?
+var folderParticles = gui.addFolder('Particle Options');
+folderParticles.open();
+folderParticles.add(state, 'chunkSize', 2, 10, 1) // chunkSize of 1 causes crash w/o useful error, unless useTypedArrays. Buffer overflow?
     .onFinishChange(() => reRender());
+folderParticles.add(state, 'particleScale', 2, 10)
+    .onChange(value => pointsMaterial.size = value * state.chunkSize);
+const guiTransparency = folderParticles.add(state, 'transparency')
+    .onChange(value => reRender());
 
-const guiParticleLayers = gui.add(state, 'particleLayers', 5, 500, 1)
+
+var folderSpritesGenerate = gui.addFolder('Sprite Sheet Generation');
+folderSpritesGenerate.add(state, "Generate Sprites")
+    .onFinishChange(value => {
+        toggleDisabled(guiParticleLayers.domElement, !value);
+        toggleDisabled(gui200Layers.domElement, value);
+        toggleDisabled(gui390Layers.domElement, value);
+        reRender();
+    });
+const guiParticleLayers = folderSpritesGenerate.add(state, 'particleLayers', 10, 380, 1)
     .onFinishChange(() => reRender())
-if (state.useSpritesImg) {
+if (!state["Generate Sprites"]) {
     toggleDisabled(guiParticleLayers.domElement, true)
 }
 
-gui.add(state, 'particleScale', 2, 10)
-    .onChange(value => pointsMaterial.size = value * state.chunkSize);
 
+var folderForScience = gui.addFolder('For Science');
 
-
-gui.add(state, 'useTypedArrays')
+// This seems to have no effect on performance in Chrome
+folderForScience.add(state, 'useTypedArrays')
     .onChange(value => reRender());
 
 // Drawing to a canvas and pulling pixels from its context yields 32bit colors.
 // This seems much slower than loading a 8bit file buffer directly and decoding with UPNG,
 // even if the whole contest is first converted to a Uint32Array
-gui.add(state, 'bypassCanvas')
-    .onChange(value => reRender());
-
-gui.add(state, 'transparency')
+folderForScience.add(state, 'bypassCanvas')
     .onChange(value => reRender());
 
 
@@ -209,6 +242,7 @@ const reRender = () => {
 
     then = new Date().getTime();
     info.innerHTML = "";
+    saveSpritesUI.classList.add("hidden");
     progressBar.setAttribute('style', '');
     init();
 }
@@ -231,19 +265,18 @@ let spriteCtx: CanvasRenderingContext2D;
 let spritesCtx: CanvasRenderingContext2D;
 const MAX_CANVAS_AREA = 268435456;
 const spriteCols = 20; // TODO: Crop ait in photoshop
+
+// Canvas for drawing all individually loaded layers as sprites in a single big image
+// TODO: Use UPNG to generate animated PNG instead?
 const spriteCanvas = document.createElement("canvas"); // document.getElementById('sprite-canvas') as HTMLCanvasElement;
-if (generateSprites) {
-    // Canvas for drawing all individually loaded layers as sprites in a single big image
-    // TODO: Use UPNG to generate animated PNG instead?
-    spriteCanvas.width = imgWidth * spriteCols;
-    spriteCanvas.height = state.particleLayers / spriteCols * imgHeight;
-    console.log("spriteCanvas dimensions: " + spriteCanvas.width + " * " + spriteCanvas.height + " = " + spriteCanvas.width * spriteCanvas.height)
-    spriteCanvas.style.width = `${spriteCanvas.width}px`;
-    spriteCanvas.style.height = `${spriteCanvas.height}px`;
-    spriteCtx = spriteCanvas?.getContext('2d') as CanvasRenderingContext2D;
-    spriteCtx.fillStyle = 'grey';
-    spriteCtx.fillRect(0, 0, spriteCanvas.width, spriteCanvas.height)
-}
+spriteCanvas.width = imgWidth * spriteCols;
+spriteCanvas.height = state.particleLayers / spriteCols * imgHeight;
+console.log("spriteCanvas dimensions: " + spriteCanvas.width + " * " + spriteCanvas.height + " = " + spriteCanvas.width * spriteCanvas.height)
+spriteCanvas.style.width = `${spriteCanvas.width}px`;
+spriteCanvas.style.height = `${spriteCanvas.height}px`;
+spriteCtx = spriteCanvas?.getContext('2d') as CanvasRenderingContext2D;
+spriteCtx.fillStyle = 'grey';
+spriteCtx.fillRect(0, 0, spriteCanvas.width, spriteCanvas.height)
 
 
 const dist3d = (x: number, y: number, z: number) => Math.sqrt(x * x + y * y + z * z)
@@ -256,7 +289,7 @@ const pushParticle = (x: number, y: number, layer: number, { r, g, b, a }: { r: 
     const yPoz = y / canvas.height * volume - volume / 2;
     const zPoz = layer / state.particleLayers * volume - volume / 2;
     const dist = dist3d(xPoz, zPoz, yPoz);
-    //if (dist < (volume / 2) - 72) { // spherical hack just for this model... TODO: Hide model 1px adjacent to support?
+    // if (dist < (volume / 2) - 72) { // spherical hack just for this model... TODO: Hide model 1px adjacent to support?
     const distanceRatio = dist / (volume / 2.5); // Add some fake volumetric shading to differentiate foreground particles
     if (state.useTypedArrays) {
         positions32.set([xPoz, zPoz, yPoz], particles * 3);
@@ -314,16 +347,14 @@ const loadNextImage = () => {
     pic.src = src2 ? `imgs2/6cm_italianPaper_pavone_${srcLayer}.png` : `imgs/6cm_italianPaper_pavone_${srcLayer}.png`;
     pic.onload = function () {
         loaderCtx.drawImage(pic, 0, 0, imgWidth / imgAspectRatio, imgHeight);
-        if (generateSprites) {
-            spriteCtx.drawImage(pic, (particleLayer % spriteCols) * (imgWidth / imgAspectRatio), Math.floor(particleLayer / spriteCols) * imgHeight, imgWidth / imgAspectRatio, imgHeight);
-        }
+        spriteCtx.drawImage(pic, (particleLayer % spriteCols) * (imgWidth / imgAspectRatio), Math.floor(particleLayer / spriteCols) * imgHeight, imgWidth / imgAspectRatio, imgHeight);
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(pic, 0, 0);
         var myGetImageData = loaderCtx.getImageData(0, 0, pic.width, pic.height);
         var sourceBuffer32 = new Uint32Array(myGetImageData.data.buffer);
 
-        if (!state.useSpritesImg) {
+        if (!!state["Generate Sprites"]) {
             frames.push(myGetImageData.data);
         }
 
@@ -343,7 +374,6 @@ const loadNextImage = () => {
         }
         particleLayer++;
         setProgressBarRatio(particleLayer / state.particleLayers)
-        // srcLayer += Math.round(sourceLayers / state.particleLayers);
         srcLayer = Math.round(particleLayer / state.particleLayers * sourceLayers)
         if (srcLayer < sourceLayers) {
             loadNextImage();
@@ -361,13 +391,10 @@ const loadNextImage = () => {
 /*
  * Download Sprites APNG
  */
-const subGUI = document.getElementById("sub-gui") as HTMLElement;
+const saveSpritesUI = document.getElementById("save-sprites-ui") as HTMLElement;
 const saveAPNGButton = document.getElementById("save-apng") as HTMLElement;
 const saveSpritesPNGButton = document.getElementById("save-sprites-png") as HTMLElement;
 const saveAPNGBlabel = document.getElementById("save-apng-label") as HTMLElement;
-if (!state.useSpritesImg) {
-    subGUI.classList.remove("hidden");
-}
 saveAPNGButton.addEventListener("click", () => {
     console.log(frames.length, canvas.width, canvas.height);
     saveAPNGButton.setAttribute("disabled", "")
@@ -490,7 +517,9 @@ const parseNextSprite = () => {
         }
     }
 
-    // // TODO: Small debuggable APNG?
+    // Decoded APNGs have 4bit depth and seems to have extra data per frame? Frame 100 of 200 looks right but others seem to drift.
+    // This smells like a UPNG bug since one would expect frames to be self-contained
+    // TODO: Small debuggable APNG?
     // const frame = UPNGImage.frames[currentSprite];
     // const frameData = (frame as any)?.data as Uint8Array
     // if (currentSprite === 120) {
@@ -528,7 +557,7 @@ const parseNextSprite = () => {
  * INIT
  */
 const init = () => {
-    if (!state.useSpritesImg) {
+    if (!!state["Generate Sprites"]) {
         loadNextImage();
     } else {
         if (state.bypassCanvas) {
