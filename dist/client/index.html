@@ -15,6 +15,7 @@
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
+                pointer-events: none;
             }
             #progressBar {
                 width: 200px;
@@ -65,25 +66,15 @@
     </head>
 
     <body>
-        <canvas id="loader-canvas" style="position: absolute"></canvas>
-        <div
-            style="
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                width: 1000px;
-                height: 100px;
-                overflow: auto;
-            "
-        >
-            <canvas id="sprite-canvas" width="10" height="10"></canvas>
-        </div>
+        <canvas id="loader-canvas"></canvas>
+
         <p id="info"></p>
         <div id="save-sprites-ui" class="hidden">
             <label id="save-apng-label">loading layers</label><br />
             <button id="save-apng" disabled>Save Animated PNG</button><br />
             <button id="save-sprites-png" disabled>Save Sprites PNG</button>
         </div>
+
         <div id="progressBar">
             <div id="barStatus"></div>
         </div>

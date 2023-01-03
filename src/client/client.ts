@@ -24,7 +24,7 @@ renderer.setSize(window.innerWidth, window.innerHeight)
 document.body.appendChild(renderer.domElement)
 
 const controls = new OrbitControls(camera, renderer.domElement)
-controls.autoRotate = true;
+controls.autoRotate = false;
 
 const numFormat = Intl.NumberFormat('en-US');
 const info = document.getElementById('info') as HTMLElement;
