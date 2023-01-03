@@ -39,8 +39,8 @@ let spritesSrc: string | null = null;
 // UPNG and ImageMagick generate PNGs with `depth: 4`, which would require some bitwise stuff to parse.
 // PhotoShop also achieves the smallest filesize.
 // TODO: Try GIFs?
-const spritesSrc200 = '6cm_italianPaper_pavone_sprites200_8bit.png';
-const spritesSrc380 = '6cm_italianPaper_pavone_sprites380_8bit.png';
+const spritesSrc200 = '6cm_italianPaper_pavone_sprites200_ps8bit.png';
+const spritesSrc380 = '6cm_italianPaper_pavone_sprites380_ps8bit.png';
 // spritesSrc = '6cm_italianPaper_pavone_200layers.png'; // Animated PNGs not easy to parse, and mysteriously seem a tad larger!
 spritesSrc = spritesSrc200;
 
