@@ -24,7 +24,7 @@ renderer.setSize(window.innerWidth, window.innerHeight)
 document.body.appendChild(renderer.domElement)
 
 const controls = new OrbitControls(camera, renderer.domElement)
-controls.autoRotate = false;
+controls.autoRotate = true;
 
 const numFormat = Intl.NumberFormat('en-US');
 const info = document.getElementById('info') as HTMLElement;
@@ -45,6 +45,7 @@ const spritesSrc380 = '6cm_italianPaper_pavone_sprites380_8bit.png';
 spritesSrc = spritesSrc200;
 
 const volume = 1000; // TODO: 3D bounding box derived from .gcvf XML
+const volumeZ = 950;
 const imgHeight = 827;
 const imgWidth = src2 ? 827 : 1664;
 const imgAspectRatio = src2 ? 1 : 2;
@@ -291,7 +292,7 @@ const pushParticle = (x: number, y: number, layer: number, { r, g, b, a }: { r: 
 
     const xPoz = x / canvas.width * volume - volume / 2;
     const yPoz = y / canvas.height * volume - volume / 2;
-    const zPoz = layer / state.particleLayers * volume - volume / 2;
+    const zPoz = layer / state.particleLayers * volumeZ - volumeZ / 2;
     const dist = dist3d(xPoz, zPoz, yPoz);
     // if (dist < (volume / 2) - 72) { // spherical hack just for this model... TODO: Hide model 1px adjacent to support?
     const distanceRatio = dist / (volume / 2.5); // Add some fake volumetric shading to differentiate foreground particles
