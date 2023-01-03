@@ -33,15 +33,14 @@ const info = document.getElementById('info') as HTMLElement;
  * CONFIG
  */
 const src2 = true;
-const generateSprites = false;
 let spritesSrc: string | null = null;
 // _8bit versions are saved with PhotoShop for 8bit 'depth' / color indexes.
 // UPNG and ImageMagick generate PNGs with `depth: 4`, which would require some bitwise stuff to parse.
 // PhotoShop also achieves the smallest filesize.
 // TODO: Try GIFs?
-const spritesSrc200 = '6cm_italianPaper_pavone_sprites200_ps8bit.png';
-const spritesSrc380 = '6cm_italianPaper_pavone_sprites380_ps8bit.png';
-// spritesSrc = '6cm_italianPaper_pavone_200layers.png'; // Animated PNGs not easy to parse, and mysteriously seem a tad larger!
+const spritesSrc200 = 'sprite-sheets/6cm_italianPaper_pavone_sprites200_ps8bit.png';
+const spritesSrc380 = 'sprite-sheets/6cm_italianPaper_pavone_sprites380_ps8bit.png';
+// spritesSrc = 'sprite-sheets/6cm_italianPaper_pavone_200layers.png'; // Animated PNGs not easy to parse, and mysteriously seem a tad larger!
 spritesSrc = spritesSrc200;
 
 const volume = 1000; // TODO: 3D bounding box derived from .gcvf XML
@@ -349,7 +348,7 @@ let srcLayer = 0;
 let particleLayer = 0;
 let frames: ArrayBufferLike[] = [];
 const loadNextImage = () => {
-    pic.src = src2 ? `imgs2/6cm_italianPaper_pavone_${srcLayer}.png` : `imgs/6cm_italianPaper_pavone_${srcLayer}.png`;
+    pic.src = src2 ? `source-layers/6cm_italianPaper_pavone_${srcLayer}.png` : `source-layers-raw/6cm_italianPaper_pavone_${srcLayer}.png`;
     pic.onload = function () {
         loaderCtx.drawImage(pic, 0, 0, imgWidth / imgAspectRatio, imgHeight);
         spriteCtx.drawImage(pic, (particleLayer % spriteCols) * (imgWidth / imgAspectRatio), Math.floor(particleLayer / spriteCols) * imgHeight, imgWidth / imgAspectRatio, imgHeight);
