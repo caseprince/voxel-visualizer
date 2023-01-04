@@ -58,6 +58,7 @@ npm run dev
 
 ## Thanks!
 
+-   1 Million Points in Three.js: [https://observablehq.com/@joewdavies/1-million-points-in-three-js](https://observablehq.com/@joewdavies/1-million-points-in-three-js)
 -   Three.js TypeScript Boilerplate: [https://github.com/Sean-Bradley/Three.js-TypeScript-Boilerplate.git](https://github.com/Sean-Bradley/Three.js-TypeScript-Boilerplate.git)
 -   UPNG.js: [https://github.com/photopea/UPNG.js](https://github.com/photopea/UPNG.js)
 -   dat.GUI: [https://github.com/dataarts/dat.gui](https://github.com/dataarts/dat.gui)
