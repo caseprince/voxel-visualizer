@@ -5,7 +5,7 @@ An experimental particle-based voxel renderer designed to explore optimization s
 View it live here: [https://caseprince.github.io/voxel-visualizer](https://caseprince.github.io/voxel-visualizer)
 
 ![Voxel rendering alongside completed 3D print](voxel_visualizer.jpg?raw=true 'Voxel rendering alongside completed 3D print')
-*Left: Screenshot of Voxel Visualizer. Right: Voxel data 3D printed on Stratasys J750.*
+_Left: Screenshot of Voxel Visualizer. Right: Voxel data 3D printed on Stratasys J750._
 
 ## Optimization Observations
 
@@ -17,7 +17,6 @@ View it live here: [https://caseprince.github.io/voxel-visualizer](https://casep
 1. UPNG supports encoding animated PNGs ([APNGs](https://wiki.mozilla.org/APNG_Specification)), which theoretically should be the most efficient format since frames only encode pixels from regions that are changing. However, [initial experimentation encoding APNGs](https://github.com/caseprince/voxel-visualizer/blob/main/dist/client/sprite-sheets/6cm_italianPaper_pavone_frames200.png) yielded files that are ~15% larger than [equivalent 2D sprite sheets](https://github.com/caseprince/voxel-visualizer/blob/main/dist/client/sprite-sheets/6cm_italianPaper_pavone_sprites200.png). This may warrant further investigation.
 
 ## Setup
-
 
 1. Install Node.js version 22.11.0 (or a compatible LTS release).
 2. Install dependencies
@@ -34,17 +33,17 @@ npm run dev
 
 4. Visit [http://127.0.0.1:8080](http://127.0.0.1:8080)
 
-## Thanks!
+## Thanks:
 
--   1 Million Points in Three.js: [https://observablehq.com/@joewdavies/1-million-points-in-three-js](https://observablehq.com/@joewdavies/1-million-points-in-three-js)
--   Three.js TypeScript Boilerplate: [https://github.com/Sean-Bradley/Three.js-TypeScript-Boilerplate.git](https://github.com/Sean-Bradley/Three.js-TypeScript-Boilerplate.git)
--   UPNG.js: [https://github.com/photopea/UPNG.js](https://github.com/photopea/UPNG.js)
--   dat.GUI: [https://github.com/dataarts/dat.gui](https://github.com/dataarts/dat.gui)
--   FileSaver.js: [https://github.com/eligrey/FileSaver.js](https://github.com/eligrey/FileSaver.js)
+- 1 Million Points in Three.js: [https://observablehq.com/@joewdavies/1-million-points-in-three-js](https://observablehq.com/@joewdavies/1-million-points-in-three-js)
+- Three.js TypeScript Boilerplate: [https://github.com/Sean-Bradley/Three.js-TypeScript-Boilerplate.git](https://github.com/Sean-Bradley/Three.js-TypeScript-Boilerplate.git)
+- UPNG.js: [https://github.com/photopea/UPNG.js](https://github.com/photopea/UPNG.js)
+- dat.GUI: [https://github.com/dataarts/dat.gui](https://github.com/dataarts/dat.gui)
+- FileSaver.js: [https://github.com/eligrey/FileSaver.js](https://github.com/eligrey/FileSaver.js)
 
 ## TODO
 
--   [ ] Simulate color blending
--   [ ] Output sprites directly as animated PNG
--   [ ] Add ability to parse indexed-color PNGs with 4bit indices
--   [ ] 3D bounding box calculation
+- [ ] Simulate color blending
+- [ ] Output sprites directly as animated PNG
+- [ ] Add ability to parse indexed-color PNGs with 4bit indices
+- [ ] 3D bounding box calculation
