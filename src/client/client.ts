@@ -152,7 +152,7 @@ var state = {
     "200 Layers": true,
     "380 Layers": false,
 
-    chunkSize: 4, // Currently s/b particleSampleSpread
+    chunkSize: 2, // Currently s/b particleSampleSpread
     particleScale: 5,
     transparency: false,
 
@@ -235,7 +235,6 @@ const reRender = () => {
     if (pointsMaterial) {
         pointsMaterial.dispose();
     }
-    // if (ShaderMaterial)
 
     bufferGeometry.dispose();
 
@@ -359,7 +358,7 @@ const loadNextImage = () => {
         var sourceBuffer32 = new Uint32Array(myGetImageData.data.buffer);
 
         if (!!state["Generate Sprites"]) {
-            frames.push(myGetImageData.data);
+            frames.push(myGetImageData.data as unknown as ArrayBufferLike);
         }
 
         for (var x = 0; x < canvas.width; x += imgAspectRatio * state.chunkSize) {
@@ -405,7 +404,7 @@ saveAPNGButton.addEventListener("click", () => {
     saveSpritesPNGButton.setAttribute("disabled", "")
     saveAPNGBlabel.innerHTML = "encoding...";
     setTimeout(() => {
-        var png = UPNG.encode(frames, canvas.width, canvas.height, 8, frames.map(() => 30));
+        var png = UPNG.encode(frames as ArrayBuffer[], canvas.width, canvas.height, 8, frames.map(() => 30));
         const blob = new Blob([new Uint8Array(png)]);
         saveAs(blob, `6cm_italianPaper_pavone_${state.particleLayers}layers.png`);
         saveAPNGBlabel.innerHTML = "saved!";
