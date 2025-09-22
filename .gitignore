@@ -1,1 +1,3 @@
 node_modules
+dist/client/bundle.js
+dist/client/bundle.js.LICENSE.txt
