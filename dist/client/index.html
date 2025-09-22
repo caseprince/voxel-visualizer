@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Voxel Visualizer by Case Prince</title>
+        <style>
+            body {
+                overflow: hidden;
+                margin: 0px;
+                font: 15px sans-serif;
+                background-color: #222222;
+            }
+            #loader-canvas {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                pointer-events: none;
+            }
+
+            #progressBar {
+                width: 200px;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+            #barBG {
+                position: relative;
+                width: 100%;
+                height: 13px;
+                background-color: grey;
+                margin-top: 5px;
+            }
+            #barProgress {
+                position: absolute;
+                width: 0%;
+                height: 100%;
+                background-color: #c0c0c0;
+            }
+            #info {
+                position: absolute;
+                left: 20px;
+                top: 50px;
+                color: #d8d8d8;
+            }
+            #info b {
+                color: white;
+            }
+            #save-sprites-ui {
+                position: absolute;
+                top: 121px;
+                left: 20px;
+                width: 245px;
+            }
+            label {
+                color: #c9c9c9;
+                font-size: 13px;
+                margin-bottom: 10px;
+            }
+            .hidden {
+                display: none;
+            }
+            /* hack to disable dat-gui checkboxes as well as sliders */
+            li.cr:has(div.c.disabled) {
+                opacity: 0.5;
+                filter: grayscale(100%);
+                pointer-events: none;
+            }
+        </style>
+    </head>
+
+    <body>
+        <canvas id="loader-canvas"></canvas>
+
+        <p id="info"></p>
+        <div id="save-sprites-ui" class="hidden">
+            <label id="save-apng-label">loading layers</label><br />
+            <button id="save-apng" disabled>Save Animated PNG</button><br />
+            <button id="save-sprites-png" disabled>Save Sprites PNG</button>
+        </div>
+
+        <div id="progressBar">
+            <label id="barLabel">Loading</label>
+            <div id="barBG"><div id="barProgress"></div></div>
+        </div>
+
+        <script type="module" src="bundle.js"></script>
+    </body>
+</html>
