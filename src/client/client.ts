@@ -224,8 +224,6 @@ folderForScience.add(state, 'bypassCanvas')
     .onChange(value => reRender());
 
 
-
-
 const reRender = () => {
     alphas = [];
     colors = [];
@@ -266,8 +264,7 @@ const loaderCtx = loaderCanvas?.getContext('2d') as CanvasRenderingContext2D;
 const picSprites = new Image();
 let spriteCtx: CanvasRenderingContext2D;
 let spritesCtx: CanvasRenderingContext2D;
-const MAX_CANVAS_AREA = 268435456;
-const spriteCols = 20; // TODO: Crop ait in photoshop
+const spriteCols = 20; // TODO: Crop it in photoshop?
 
 // Canvas for drawing all individually loaded layers as sprites in a single big image
 // TODO: Use UPNG to generate animated PNG instead?
@@ -376,7 +373,7 @@ const loadNextImage = () => {
             }
         }
         particleLayer++;
-        setProgressBarRatio(particleLayer / state.particleLayers)
+        updateProgressBar("loading", particleLayer / state.particleLayers)
         srcLayer = Math.round(particleLayer / state.particleLayers * sourceLayers)
         if (srcLayer < sourceLayers) {
             loadNextImage();
@@ -479,19 +476,24 @@ const loadSpritesFromFile = () => {
         }
     }
     req.onprogress = function (event) {
-        setProgressBarRatio(event.loaded / event.total);
+        updateProgressBar("Loading", event.loaded / event.total);
     }
     req.send(null);
 }
 
-var barStatus = document.getElementById("barStatus") as HTMLElement;
-const setProgressBarRatio = (ratio: number) => barStatus.style.width = ratio * 100 + '%';
+
+const updateProgressBar = (label: string, ratio: number) => {
+    const barLabel = document.getElementById("barLabel") as HTMLElement;
+    barLabel.innerHTML = label;
+    const barProgress = document.getElementById("barProgress") as HTMLElement;
+    barProgress.style.width = ratio * 100 + '%';
+}
 const parseNextSprites = () => {
     currentSprite = 0; // 104;
     parseNextSprite();
 }
 const parseNextSprite = () => {
-    barStatus.style.width = currentSprite / numSprites * 100 + '%';
+    updateProgressBar("Parsing", currentSprite / numSprites);
     const spriteXIndex = (currentSprite % spriteCols);
     const spriteYIndex = Math.floor(currentSprite / spriteCols);
 
