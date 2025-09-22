@@ -5,6 +5,7 @@ An experimental particle-based voxel renderer designed to explore optimization s
 View it live here: [https://caseprince.github.io/voxel-visualizer](https://caseprince.github.io/voxel-visualizer)
 
 ![Voxel rendering alongside completed 3D print](voxel_visualizer.jpg?raw=true 'Voxel rendering alongside completed 3D print')
+*Left: Screenshot of Voxel Visualizer. Right: Voxel data 3D printed on Stratasys J750.*
 
 ## Optimization Observations
 
@@ -15,46 +16,23 @@ View it live here: [https://caseprince.github.io/voxel-visualizer](https://casep
 1. Not all PNGs are created equal. UPNG and [ImageMagick](https://imagemagick.org/) both encode PNGs with 4-bit `depth` properties (as decoded by UPNG), which corresponds to the bit depth of color indices and makes sense given a small color palette. Photoshop, on the other hand, encodes `PNG-8` with 8-bit indices, which makes access via `Uint8Array` painless and avoids bitwise logic. (JavaScript has no built-in `Uint4Array` typed array.) Oddly, despite this, Photoshop's PNGs are slightly smaller. This makes me think I don't fully understand the PNG bit depth behavior, or there may be a bug in UPNG. The two formats appear incompatible for reading color indices. This demo uses Photoshop-encoded PNGs for simplicity.
 1. UPNG supports encoding animated PNGs ([APNGs](https://wiki.mozilla.org/APNG_Specification)), which theoretically should be the most efficient format since frames only encode pixels from regions that are changing. However, [initial experimentation encoding APNGs](https://github.com/caseprince/voxel-visualizer/blob/main/dist/client/sprite-sheets/6cm_italianPaper_pavone_frames200.png) yielded files that are ~15% larger than [equivalent 2D sprite sheets](https://github.com/caseprince/voxel-visualizer/blob/main/dist/client/sprite-sheets/6cm_italianPaper_pavone_sprites200.png). This may warrant further investigation.
 
-## TODO
+## Setup
 
--   [ ] Simulate color blending
--   [ ] Output sprites directly as animated PNG
--   [ ] Add ability to parse indexed-color PNGs with 4bit indices
--   [ ] 3D bounding box calculation
 
-## Installing
-
-1. Clone Repository
-
-```bash
-git clone https://github.com/caseprince/voxel-visualizer
-```
-
-2. CD into folder
-
-```bash
-cd voxel-visualizer
-```
-
-3. Install TypeScript
-
-```bash
-npm install -g typescript
-```
-
-4. Install dependencies
+1. Install Node.js version 22.11.0 (or a compatible LTS release).
+2. Install dependencies
 
 ```bash
 npm install
 ```
 
-5. Start it
+3. Start dev server
 
 ```bash
 npm run dev
 ```
 
-6. Visit [http://127.0.0.1:8080](http://127.0.0.1:8080)
+4. Visit [http://127.0.0.1:8080](http://127.0.0.1:8080)
 
 ## Thanks!
 
@@ -63,3 +41,10 @@ npm run dev
 -   UPNG.js: [https://github.com/photopea/UPNG.js](https://github.com/photopea/UPNG.js)
 -   dat.GUI: [https://github.com/dataarts/dat.gui](https://github.com/dataarts/dat.gui)
 -   FileSaver.js: [https://github.com/eligrey/FileSaver.js](https://github.com/eligrey/FileSaver.js)
+
+## TODO
+
+-   [ ] Simulate color blending
+-   [ ] Output sprites directly as animated PNG
+-   [ ] Add ability to parse indexed-color PNGs with 4bit indices
+-   [ ] 3D bounding box calculation
